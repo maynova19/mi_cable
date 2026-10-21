@@ -1,0 +1,5 @@
+#EXTM3U
+# Aquí puedes poner tus propios canales. Siempre se incluyen al inicio de la lista.
+# Formato de cada canal (dos líneas):
+#EXTINF:-1 tvg-logo="URL_DEL_LOGO" group-title="Mis canales",Nombre del canal
+# https://url-del-stream/playlist.m3u8

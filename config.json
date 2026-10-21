@@ -1,0 +1,16 @@
+{
+  "fuentes": {
+    "Perú": "https://iptv-org.github.io/iptv/countries/pe.m3u",
+    "Español": "https://iptv-org.github.io/iptv/languages/spa.m3u",
+    "Portugués": "https://iptv-org.github.io/iptv/languages/por.m3u",
+    "Inglés": "https://iptv-org.github.io/iptv/languages/eng.m3u"
+  },
+  "agrupar_por_fuente": "fuente_y_categoria",
+  "categorias_destacadas": {
+    "Sports": "Deportes","Movies": "Películas"
+  },
+  "verificar": true,
+  "timeout_segundos": 10,
+  "hilos": 80,
+  "excluir_si_el_nombre_contiene": []
+}
