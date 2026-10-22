@@ -12,5 +12,10 @@
   "verificar": true,
   "timeout_segundos": 10,
   "hilos": 80,
-  "excluir_si_el_nombre_contiene": []
+  "excluir_ip_directa": false,
+  "excluir_si_el_nombre_contiene": [],
+  "agrupar_por_pais_en_fuentes": ["Español","Portugués"],
+  "grupos_por_nombre": {
+  "ESPN": ["espn"]
+}
 }

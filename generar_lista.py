@@ -116,6 +116,35 @@ def obtener_fuentes():
     return canales, estado
 
 
+PAISES = {
+    "ar": "Argentina", "bo": "Bolivia", "cl": "Chile", "co": "Colombia",
+    "cr": "Costa Rica", "cu": "Cuba", "do": "República Dominicana",
+    "ec": "Ecuador", "es": "España", "gq": "Guinea Ecuatorial",
+    "gt": "Guatemala", "hn": "Honduras", "mx": "México", "ni": "Nicaragua",
+    "pa": "Panamá", "pe": "Perú", "pr": "Puerto Rico", "py": "Paraguay",
+    "sv": "El Salvador", "us": "Estados Unidos", "uy": "Uruguay",
+    "ve": "Venezuela", "br": "Brasil", "pt": "Portugal", "ao": "Angola",
+    "mz": "Mozambique", "gb": "Reino Unido", "ca": "Canadá", "au": "Australia",
+    "ie": "Irlanda", "nz": "Nueva Zelanda", "in": "India", "za": "Sudáfrica",
+    "fr": "Francia", "de": "Alemania", "it": "Italia", "ad": "Andorra",
+}
+
+
+def sin_tildes(texto):
+    import unicodedata
+    t = unicodedata.normalize("NFD", texto.lower())
+    return "".join(ch for ch in t if unicodedata.category(ch) != "Mn")
+
+
+def pais_de(extinf):
+    """País según el tvg-id de iptv-org: 'Canal.mx@SD' -> 'México'."""
+    tvg = atributo(extinf, "tvg-id") or ""
+    m = re.search(r"\.([a-z]{2})(?:@|$)", tvg.lower())
+    if not m:
+        return "Otros"
+    return PAISES.get(m.group(1), m.group(1).upper())
+
+
 def es_ip_directa(url):
     """True si la URL apunta a una IP (http://1.2.3.4:8080/...) en vez de a un dominio."""
     import ipaddress
@@ -216,23 +245,39 @@ def main():
         print("Ningún canal respondió (¿problema de red?); se conserva la lista anterior.")
         return 0
 
-    # Categorías
+
     destacadas = CONFIG.get("categorias_destacadas", {})
+    grupos_nombre = {
+        g: [sin_tildes(p) for p in palabras]
+        for g, palabras in CONFIG.get("grupos_por_nombre", {}).items()
+    }
     for c in vivos:
         c["destacada"] = None
+        c["por_nombre"] = None
+        nombre = sin_tildes(c["nombre"])
+        for grupo, palabras in grupos_nombre.items():
+            if any(p in nombre for p in palabras):
+                c["por_nombre"] = grupo
+                break
         cats = [x.strip().lower() for x in c["grupo"].split(";")]
         for original, etiqueta in destacadas.items():
             if original.lower() in cats:
                 c["destacada"] = etiqueta
                 break
 
-    # Agrupa por fuente
+
     modo = CONFIG.get("agrupar_por_fuente", "fuente_y_categoria")
     orden_fuente = {n: i for i, n in enumerate(CONFIG["fuentes"])}
     orden_dest = {e: i for i, e in enumerate(destacadas.values())}
+    por_pais = set(CONFIG.get("agrupar_por_pais_en_fuentes", []))
+    orden_nombre = {g: i for i, g in enumerate(grupos_nombre)}
     for c in vivos:
-        if c["destacada"]:
+        if c["por_nombre"]:
+            nuevo = c["por_nombre"]
+        elif c["destacada"]:
             nuevo = f'{c["destacada"]} | {c["fuente"]}'
+        elif c["fuente"] in por_pais:
+            nuevo = f'{c["fuente"]} | {pais_de(c["extinf"])}'
         elif modo == "fuente":
             nuevo = c["fuente"]
         elif modo == "fuente_y_categoria":
@@ -241,9 +286,10 @@ def main():
             nuevo = c["grupo"]
         c["extinf"] = poner_grupo(c["extinf"], nuevo)
         c["grupo"] = nuevo
-    # Primero las carpetas destacadas, luego cada fuente en el orden de config.json
+
     vivos.sort(key=lambda c: (
-        0 if c["destacada"] else 1,
+        0 if c["por_nombre"] else 1 if c["destacada"] else 2,
+        orden_nombre.get(c["por_nombre"], 0),
         orden_dest.get(c["destacada"], 0),
         orden_fuente.get(c["fuente"], 99),
         c["grupo"].lower(),
